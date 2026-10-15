@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Inventory & Analytics Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fb;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1d3c60;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #00000015;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            max-width: 350px;
+            padding: 10px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 16px;
+            margin-top: 15px;
+            margin-right: 8px;
+            background: #2e6da4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4f7a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #eaf1f8;
+        }
+
+        pre {
+            background: #172033;
+            color: #e5eefc;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .message {
+            font-weight: bold;
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Product Inventory & Analytics Dashboard</h1>
+
+    <!-- Add Product Section -->
+    <div class="card">
+        <h2>Add a Product</h2>
+
+        <label for="productName">Product Name:</label>
+        <input type="text" id="productName" placeholder="Enter product name"
+               value="Monitor">
+
+        <label for="productPrice">Product Price ($):</label>
+        <input type="number" id="productPrice" min="0.01" step="0.01"
+               placeholder="Enter price" value="150">
+
+        <br>
+
+        <button onclick="addProduct()">Add Product</button>
+        <button onclick="resetInventory()">Reset Inventory</button>
+
+        <p id="message" class="message"></p>
+    </div>
+
+    <!-- Inventory Section -->
+    <div class="card">
+        <h2>Inventory Roster</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+
+            <tbody id="inventoryTable"></tbody>
+        </table>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="card">
+        <h2>Financial Analytics</h2>
+        <div id="analytics"></div>
+    </div>
+
+    <!-- Output Section -->
+    <div class="card">
+        <h2>Project Output</h2>
+        <pre id="output"></pre>
+    </div>
+
+</div>
+
+<script>
+  "use strict";
+
+// Initial inventory
+const originalInventory = [
+    { name: "Laptop", price: 800 },
+    { name: "Mouse", price: 25 }
+];
+
+let inventory = originalInventory.map(item => ({ ...item }));
+
+// Determine product category
+function getCategory(price) {
+    if (price < 100) {
+        return "Budget";
+    } else if (price < 200) {
+        return "Standard";
+    } else {
+        return "Premium";
+    }
+}
+
+// Calculate total inventory value
+function calculateTotal() {
+    return inventory.reduce((total, item) => total + item.price, 0);
+}
+
+// Add product
+function addProduct() {
+    const nameInput = document.getElementById("productName");
+    const priceInput = document.getElementById("productPrice");
+    const message = document.getElementById("message");
+
+    const name = nameInput.value.trim();
+    const price = Number(priceInput.value);
+
+    if (name === "" || priceInput.value.trim() === "" ||
+        !Number.isFinite(price) || price <= 0) {
+        message.style.color = "red";
+        message.textContent = "Please enter a valid product name and price.";
+        return;
+    }
+
+    // Add product to inventory
+    inventory.push({
+        name: name,
+        price: price
+    });
+
+    message.style.color = "green";
+    message.textContent = name + " added successfully!";
+
+    // Refresh inventory and output immediately
+    renderProject();
+
+    // Clear the input fields
+    nameInput.value = "";
+    priceInput.value = "";
+}
+
+// Display inventory roster
+function displayInventory() {
+    const table = document.getElementById("inventoryTable");
+    table.innerHTML = "";
+
+    inventory.forEach(function(item) {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${escapeHTML(item.name)}</td>
+            <td>$${item.price.toFixed(2)}</td>
+            <td>${getCategory(item.price)}</td>
+        `;
+
+        table.appendChild(row);
+    });
+}
+
+// Prevent HTML injection through product names
+function escapeHTML(value) {
+    return value.replace(/[&<>"']/g, function(character) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[character];
+    });
+}
+
+// Display analytics
+function displayAnalytics() {
+    const total = calculateTotal();
+
+    const affordableItems = inventory
+        .filter(item => item.price < 200)
+        .map(item => item.name);
+
+    const formattedReport = inventory.map(
+        item => item.name.toUpperCase() + ": $" + item.price
+    );
+
+    document.getElementById("analytics").innerHTML = `
+        <p><strong>Total Products:</strong> ${inventory.length}</p>
+        <p><strong>Total Inventory Value:</strong> $${total.toFixed(2)}</p>
+        <p><strong>Affordable Items (Under $200):</strong></p>
+        <p>${JSON.stringify(affordableItems)}</p>
+        <p><strong>Formatted Report List:</strong></p>
+        <p>${JSON.stringify(formattedReport)}</p>
+    `;
+}
+
+// Display complete output
+function displayOutput() {
+    let output = "--- Initializing Inventory System ---\n";
+
+    output += "\n--- Processing Inventory Roster (forEach) ---\n";
+
+    inventory.forEach(item => {
+        output += "* Item: " + item.name +
+            " ($" + item.price + ") -> Category: " +
+            getCategory(item.price) + "\n";
+    });
+
+    output += "\n--- Financial Analytics ---\n";
+    output += "Total Inventory Value: $" +
+        calculateTotal().toFixed(2) + "\n";
+
+    const affordableItems = inventory
+        .filter(item => item.price < 200)
+        .map(item => item.name);
+
+    const formattedReport = inventory.map(
+        item => item.name.toUpperCase() + ": $" + item.price
+    );
+
+    output += "\nFiltered Affordable Items (Under $200):\n";
+    output += JSON.stringify(affordableItems) + "\n";
+
+    output += "\nFormatted Report List:\n";
+    output += JSON.stringify(formattedReport) + "\n";
+
+    output += "\n--- Inventory System Complete ---";
+
+    document.getElementById("output").textContent = output;
+}
+
+// Update every section
+function renderProject() {
+    displayInventory();
+    displayAnalytics();
+    displayOutput();
+}
+
+// Reset inventory
+function resetInventory() {
+    inventory = originalInventory.map(item => ({ ...item }));
+
+    document.getElementById("message").textContent =
+        "Inventory reset successfully.";
+
+    renderProject();
+}
+
+// Initialize project
+renderProject();
+
+</script>
+
+</body>
+</html>
